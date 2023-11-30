@@ -1,4 +1,4 @@
-package io.axual.ksml.rest.server;
+package io.axual.ksml.rest.server.resources;
 
 /*-
  * ========================LICENSE_START=================================
@@ -26,6 +26,7 @@ import org.apache.kafka.streams.StreamsMetadata;
 
 import java.util.Collection;
 
+import io.axual.ksml.rest.server.StreamsQuerier;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -1,4 +1,4 @@
-package io.axual.ksml.rest.server;
+package io.axual.ksml.rest.server.resources;
 
 /*-
  * ========================LICENSE_START=================================
@@ -34,6 +34,9 @@ import io.axual.ksml.rest.data.KeyValueBean;
 import io.axual.ksml.rest.data.KeyValueBeans;
 import io.axual.ksml.rest.data.WindowedKeyValueBean;
 import io.axual.ksml.rest.data.WindowedKeyValueBeans;
+import io.axual.ksml.rest.server.GlobalState;
+import io.axual.ksml.rest.server.RestClient;
+import io.axual.ksml.rest.server.StreamsQuerier;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

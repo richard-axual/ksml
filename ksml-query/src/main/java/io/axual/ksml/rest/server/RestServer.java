@@ -24,6 +24,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
+
+import io.axual.ksml.rest.server.resources.KeyValueStoreResource;
+import io.axual.ksml.rest.server.resources.LoggingResource;
+import io.axual.ksml.rest.server.resources.WindowedKeyValueStoreResource;
 import jakarta.ws.rs.core.UriBuilder;
 import org.apache.kafka.streams.state.HostInfo;
 import org.glassfish.grizzly.http.server.HttpHandler;
@@ -57,6 +61,7 @@ public class RestServer implements AutoCloseable {
         rc.register(KeyValueStoreResource.class);
         rc.register(WindowedKeyValueStoreResource.class);
         rc.register(RestServerExceptionMapper.class);
+        rc.register(LoggingResource.class);
         rc.register(provider);
 
         // create Grizzly instance and add handler

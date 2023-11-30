@@ -1,4 +1,4 @@
-package io.axual.ksml.rest.server;
+package io.axual.ksml.rest.server.resources;
 
 /*-
  * ========================LICENSE_START=================================
