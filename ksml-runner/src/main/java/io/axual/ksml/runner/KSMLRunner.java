@@ -29,7 +29,6 @@ import io.axual.ksml.rest.server.RestServer;
 import io.axual.ksml.runner.backend.Backend;
 import io.axual.ksml.runner.backend.KafkaBackend;
 import io.axual.ksml.runner.config.KSMLRunnerConfig;
-import io.axual.ksml.runner.logging.PropertyLoggerLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.state.HostInfo;
 
@@ -48,9 +47,6 @@ public class KSMLRunner {
     private static final String DEFAULT_CONFIG_FILE_SHORT = "ksml-runner.yaml";
 
     public static void main(String[] args) {
-        // Prepare logger
-        var loader = new PropertyLoggerLoader();
-        loader.load();
         // Load name and version from manifest
         String name = "KSML Runner";
         String version = "";
