@@ -6,7 +6,8 @@
             <level>WARN</level>
         </filter>
         <encoder>
-            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} %-5level %-36logger{36} %msg%n</pattern>
+            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] [%-5level] [%-36logger{36}] %msg%n</pattern>
+<!--            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] [%-5level] [%-36logger{36}] %replace(%msg){'(\r*\n)', '\\n'} %replace(%ex{full}){'(\r*\n)', '\\n'}%n</pattern>-->
         </encoder>
     </appender>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
@@ -32,24 +33,33 @@
             <onMatch>DENY</onMatch>
         </filter>
         <encoder>
-            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} %-5level %-36logger{36} %msg%n</pattern>
+            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] [%-5level] [%-36logger{36}] %msg%n</pattern>
+<!--            <pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%thread] [%-5level] [%-36logger{36}] %replace(%msg){'(\r*\n)', '\\n'} %replace(%ex{full}){'(\r*\n)', '\\n'}%n</pattern>-->
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="${KSML_LOGLEVEL_ROOT:-INFO}">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="STDERR" />
     </root>
 
-    <logger name="io.axual" level="WARN"/>
-    <logger name="io.axual.common" level="WARN"/>
-    <logger name="org.apache.kafka" level="WARN"/>
-    <logger name="org.apache.kafka.clients.consumer.ConsumerConfig" level="ERROR"/>
-    <logger name="org.apache.kafka.clients.producer.ProducerConfig" level="ERROR"/>
-    <logger name="org.apache.kafka.clients.admin.AdminClientConfig" level="ERROR"/>
-    <logger name="org.apache.kafka.streams.StreamsConfig" level="ERROR"/>
-    <logger name="io.confluent" level="WARN"/>
-    <logger name="io.axual.ksml" level="INFO"/>
-    <logger name="io.axual.client" level="WARN"/>
-    <logger name="io.axual.discovery.client.fetcher" level="DEBUG"/>
+    <!-- KSML Specific logging -->
+    <logger name="io.axual.ksml" level="${KSML_LOGLEVEL_KSML:-INFO}"/>
+    <logger name="io.axual.ksml.runner" level="${KSML_LOGLEVEL_KSML_RUNNER:-INFO}"/>
+    <logger name="io.axual.ksml.datagenerator" level="${KSML_LOGLEVEL_KSML_DATAGEN:-WARN}"/>
+    <logger name="io.axual.ksml.python" level="${KSML_LOGLEVEL_KSML_PYTHON:-WARN}"/>
+    <logger name="io.axual.ksml.client" level="${KSML_LOGLEVEL_KSML_CLIENT:-WARN}"/>
+    <logger name="io.axual.ksml.serde" level="${KSML_LOGLEVEL_KSML_SERDE:-WARN}"/>
+    <logger name="io.axual.ksml.store" level="${KSML_LOGLEVEL_KSML_STORE:-WARN}"/>
+
+    <!-- Kafka/Kafka Streams loggers    -->
+    <logger name="org.apache.kafka.streams" level="${KSML_LOGLEVEL_KAFKA_STREAMS:-WARN}"/>
+    <logger name="org.apache.kafka" level="${KSML_LOGLEVEL_KAFKA:-WARN}"/>
+    <logger name="org.apache.kafka.clients.consumer.ConsumerConfig" level="${KSML_LOGLEVEL_KAFKA_CONFIG_CONSUMER:-ERROR}"/>
+    <logger name="org.apache.kafka.clients.producer.ProducerConfig" level="${KSML_LOGLEVEL_KAFKA_CONFIG_PRODUCER:-ERROR}"/>
+    <logger name="org.apache.kafka.clients.admin.AdminClientConfig" level="${KSML_LOGLEVEL_KAFKA_CONFIG_ADMIN:-ERROR}"/>
+    <logger name="org.apache.kafka.streams.StreamsConfig" level="${KSML_LOGLEVEL_KAFKA_STREAMS_CONFIG_CONSUMER:-ERROR}"/>
+
+    <!-- Serde specific logging -->
+    <logger name="io.confluent" level="${KSML_LOGLEVEL_CONFLUENT_SR:-WARN}"/>
 </configuration>

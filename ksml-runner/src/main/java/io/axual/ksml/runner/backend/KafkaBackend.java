@@ -32,6 +32,7 @@ import io.axual.ksml.notation.NotationLibrary;
 import io.axual.ksml.rest.server.StreamsQuerier;
 import io.axual.ksml.runner.config.KSMLConfig;
 import io.axual.ksml.runner.streams.KSMLClientSupplier;
+import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
@@ -52,104 +53,117 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class KafkaBackend implements Backend {
-    private final KafkaStreams kafkaStreams;
-    private final AtomicBoolean stopRunning = new AtomicBoolean(false);
 
-    public KafkaBackend(KSMLConfig ksmlConfig, Map<String, String> kafkaConfig) {
-        log.info("Constructing Kafka Backend");
+  private final KafkaStreams kafkaStreams;
+  private final AtomicBoolean stopRunning = new AtomicBoolean(false);
 
-        HashMap<String, Object> streamsConfig = kafkaConfig != null ? new HashMap<>(kafkaConfig) : new HashMap<>();
-        // Explicit configs can overwrite those from the map
-        streamsConfig.put(StreamsConfig.TOPOLOGY_OPTIMIZATION_CONFIG, StreamsConfig.OPTIMIZE);
-        streamsConfig.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, ExecutionErrorHandler.class);
-        streamsConfig.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, ExecutionErrorHandler.class);
-        if (streamsConfig.containsKey(ResolvingClientConfig.GROUP_ID_PATTERN_CONFIG)
-                || streamsConfig.containsKey(ResolvingClientConfig.TOPIC_PATTERN_CONFIG)
-                || streamsConfig.containsKey(ResolvingProducerConfig.TRANSACTIONAL_ID_PATTERN_CONFIG)) {
-            log.info("Using resolving clients for Kafka");
-            streamsConfig.put(StreamsConfig.DEFAULT_CLIENT_SUPPLIER_CONFIG, KSMLClientSupplier.class.getCanonicalName());
-        }
+  public KafkaBackend(KSMLConfig ksmlConfig, Map<String, String> kafkaConfig) {
+    log.info("Constructing Kafka Backend");
 
-        streamsConfig.put(StreamsConfig.STATE_DIR_CONFIG, ksmlConfig.getStorageDirectory());
-        if (ksmlConfig.getApplicationServer() != null && ksmlConfig.getApplicationServer().isEnabled()) {
-            streamsConfig.put(StreamsConfig.APPLICATION_SERVER_CONFIG, ksmlConfig.getApplicationServer().getApplicationServer());
-        }
+    HashMap<String, Object> streamsConfig =
+        kafkaConfig != null ? new HashMap<>(kafkaConfig) : new HashMap<>();
+    // Explicit configs can overwrite those from the map
+    streamsConfig.put(StreamsConfig.TOPOLOGY_OPTIMIZATION_CONFIG, StreamsConfig.OPTIMIZE);
+    streamsConfig.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG,
+        ExecutionErrorHandler.class);
+    streamsConfig.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
+        ExecutionErrorHandler.class);
+    if (streamsConfig.containsKey(ResolvingClientConfig.GROUP_ID_PATTERN_CONFIG)
+        || streamsConfig.containsKey(ResolvingClientConfig.TOPIC_PATTERN_CONFIG)
+        || streamsConfig.containsKey(ResolvingProducerConfig.TRANSACTIONAL_ID_PATTERN_CONFIG)) {
+      log.info("Using resolving clients for Kafka");
+      streamsConfig.put(StreamsConfig.DEFAULT_CLIENT_SUPPLIER_CONFIG,
+          KSMLClientSupplier.class.getCanonicalName());
+    }
 
-        // set up a stream topology generator based on the provided KSML definition
-        var ksmlConf = io.axual.ksml.KSMLConfig.builder()
-                .sourceType("file")
-                .configDirectory(ksmlConfig.getConfigDirectory())
-                .schemaDirectory(ksmlConfig.getSchemaDirectory())
-                .source(ksmlConfig.getDefinitions())
-                .notationLibrary(new NotationLibrary(streamsConfig))
-                .build();
+    streamsConfig.put(StreamsConfig.STATE_DIR_CONFIG, ksmlConfig.getStorageDirectory());
+    if (ksmlConfig.getApplicationServer() != null && ksmlConfig.getApplicationServer()
+        .isEnabled()) {
+      streamsConfig.put(StreamsConfig.APPLICATION_SERVER_CONFIG,
+          ksmlConfig.getApplicationServer().getApplicationServer());
+    }
 
-        var applicationId = kafkaConfig != null ? kafkaConfig.get(StreamsConfig.APPLICATION_ID_CONFIG) : null;
-        if (applicationId == null) {
-            applicationId = "ksmlApplicationId";
-        }
+    // set up a stream topology generator based on the provided KSML definition
+    var ksmlConf = io.axual.ksml.KSMLConfig.builder()
+        .sourceType("file")
+        .configDirectory(ksmlConfig.getConfigDirectory())
+        .schemaDirectory(ksmlConfig.getSchemaDirectory())
+        .source(ksmlConfig.getDefinitions())
+        .notationLibrary(new NotationLibrary(streamsConfig))
+        .build();
 
-        ExecutionContext.INSTANCE.setSerdeWrapper(
-                serde -> new Serdes.WrapperSerde<>(
-                        new ResolvingSerializer<>(serde.serializer(), streamsConfig),
-                        new ResolvingDeserializer<>(serde.deserializer(), streamsConfig)));
-        var topologyGenerator = new KSMLTopologyGenerator(applicationId, ksmlConf, streamsConfig);
+    var applicationId =
+        kafkaConfig != null ? kafkaConfig.get(StreamsConfig.APPLICATION_ID_CONFIG) : null;
+    if (applicationId == null) {
+      applicationId = "ksmlApplicationId";
+    }
+
+    ExecutionContext.INSTANCE.setSerdeWrapper(
+        serde -> new Serdes.WrapperSerde<>(
+            new ResolvingSerializer<>(serde.serializer(), streamsConfig),
+            new ResolvingDeserializer<>(serde.deserializer(), streamsConfig)));
+    var topologyGenerator = new KSMLTopologyGenerator(applicationId, ksmlConf, streamsConfig);
 
 //        var topologyConfig = new TopologyConfig(applicationId, new StreamsConfig(streamsConfig), new Properties());
-        var topologyConfig = new TopologyConfig(new StreamsConfig(streamsConfig));
-        final var topology = topologyGenerator.create(new StreamsBuilder(topologyConfig));
-        kafkaStreams = new KafkaStreams(topology, mapToProperties(streamsConfig));
-        kafkaStreams.setUncaughtExceptionHandler(ExecutionContext.INSTANCE::uncaughtException);
+    var topologyConfig = new TopologyConfig(new StreamsConfig(streamsConfig));
+    final var topology = topologyGenerator.create(new StreamsBuilder(topologyConfig));
+    kafkaStreams = new KafkaStreams(topology, mapToProperties(streamsConfig));
+    kafkaStreams.setUncaughtExceptionHandler(ExecutionContext.INSTANCE::uncaughtException);
+  }
+
+  private Properties mapToProperties(Map<String, Object> configs) {
+    var result = new Properties();
+    configs.entrySet().stream().forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+    return result;
+  }
+
+  @Override
+  public State getState() {
+    return convertStreamsState(kafkaStreams.state());
+  }
+
+  @Override
+  public StreamsQuerier getQuerier() {
+    return new StreamsQuerier() {
+      @Override
+      public Collection<StreamsMetadata> allMetadataForStore(String storeName) {
+        return kafkaStreams.streamsMetadataForStore(storeName);
+      }
+
+      @Override
+      public <K> KeyQueryMetadata queryMetadataForKey(String storeName, K key,
+          Serializer<K> keySerializer) {
+        return kafkaStreams.queryMetadataForKey(storeName, key, keySerializer);
+      }
+
+      @Override
+      public <T> T store(StoreQueryParameters<T> storeQueryParameters) {
+        return kafkaStreams.store(storeQueryParameters);
+      }
+    };
+  }
+
+  @Override
+  public KafkaStreams getStreams() {
+    return kafkaStreams;
+  }
+  @Override
+  public void close() {
+    kafkaStreams.close();
+  }
+
+  @Override
+  public void run() {
+    log.info("Starting Kafka Backend");
+    kafkaStreams.start();
+    Utils.sleep(1000);
+    while (!stopRunning.get()) {
+      final var state = getState();
+      if (state == State.STOPPED || state == State.FAILED) {
+        log.info("Streams implementation has stopped, stopping Kafka Backend");
+        break;
+      }
+      Utils.sleep(200);
     }
-
-    private Properties mapToProperties(Map<String, Object> configs) {
-        var result = new Properties();
-        configs.entrySet().stream().forEach(entry -> result.put(entry.getKey(), entry.getValue()));
-        return result;
-    }
-
-    @Override
-    public State getState() {
-        return convertStreamsState(kafkaStreams.state());
-    }
-
-    @Override
-    public StreamsQuerier getQuerier() {
-        return new StreamsQuerier() {
-            @Override
-            public Collection<StreamsMetadata> allMetadataForStore(String storeName) {
-                return kafkaStreams.streamsMetadataForStore(storeName);
-            }
-
-            @Override
-            public <K> KeyQueryMetadata queryMetadataForKey(String storeName, K key, Serializer<K> keySerializer) {
-                return kafkaStreams.queryMetadataForKey(storeName, key, keySerializer);
-            }
-
-            @Override
-            public <T> T store(StoreQueryParameters<T> storeQueryParameters) {
-                return kafkaStreams.store(storeQueryParameters);
-            }
-        };
-    }
-
-    @Override
-    public void close() {
-        kafkaStreams.close();
-    }
-
-    @Override
-    public void run() {
-        log.info("Starting Kafka Backend");
-        kafkaStreams.start();
-        Utils.sleep(1000);
-        while (!stopRunning.get()) {
-            final var state = getState();
-            if (state == State.STOPPED || state == State.FAILED) {
-                log.info("Streams implementation has stopped, stopping Kafka Backend");
-                break;
-            }
-            Utils.sleep(200);
-        }
-    }
+  }
 }

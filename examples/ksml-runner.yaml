@@ -1,8 +1,8 @@
 ksml:
   # The examples directory is mounted to /ksml in the run script
-  configDirectory: /ksml # When not set defaults to the working directory
-  schemaDirectory: /ksml # When not set defaults to the config directory
-  storageDirectory: /tmp # When not set defaults to the default JVM temp directory
+#  configDirectory: /ksml # When not set defaults to the working directory
+#  schemaDirectory: /ksml # When not set defaults to the config directory
+#  storageDirectory: /tmp # When not set defaults to the default JVM temp directory
   definitions:
   - 01-example-inspect.yaml
 #  - 02-example-copy.yaml
@@ -18,13 +18,17 @@ ksml:
 #  - 12-example-bytemanipulation.yaml
 #  - 13-example-join.yaml
 #  - 14-example-manual-state-store.yaml
+  applicationServer:
+    enabled: true
+    host: 0.0.0.0
+    port: 8080
 
 # This setup connects to the Kafka broker and schema registry started with the example docker-compose file
 # These examples are intended to run from a inside a container on the same network
 kafka:
-  bootstrap.servers: broker:9093
+  bootstrap.servers: localhost:9092
   application.id: io.ksml.example.streaming
-  schema.registry.url: http://schema_registry:8081
+  schema.registry.url: http://localhost:8081
   security.protocol: PLAINTEXT
   auto.offset.reset: earliest
   acks: all

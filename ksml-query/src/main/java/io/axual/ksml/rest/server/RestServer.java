@@ -27,8 +27,11 @@ import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 
 import io.axual.ksml.rest.server.resources.KeyValueStoreResource;
 import io.axual.ksml.rest.server.resources.LoggingResource;
+import io.axual.ksml.rest.server.resources.MetricsResource;
 import io.axual.ksml.rest.server.resources.WindowedKeyValueStoreResource;
 import jakarta.ws.rs.core.UriBuilder;
+import java.io.File;
+import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.state.HostInfo;
 import org.glassfish.grizzly.http.server.HttpHandler;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -41,50 +44,65 @@ import org.glassfish.jersey.server.ResourceConfig;
 import java.io.IOException;
 
 public class RestServer implements AutoCloseable {
-    private static final String ROOT_RESOURCE_PATH = "";
-    private final HostInfo hostInfo;
-    private final HttpServer server;
 
-    public RestServer(HostInfo hostInfo) {
-        this.hostInfo = hostInfo;
+  private static final String ROOT_RESOURCE_PATH = "";
+  private final HostInfo hostInfo;
+  private final HttpServer server;
 
-        // create JsonProvider to provide custom ObjectMapper
-        var mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+  private final MetricsResource metricsResource;
 
-        var provider = new JacksonJsonProvider();
-        provider.setMapper(mapper);
+  public RestServer(HostInfo hostInfo) {
+    this.hostInfo = hostInfo;
 
-        // configure REST service
-        ResourceConfig rc = new ResourceConfig();
-        rc.register(KeyValueStoreResource.class);
-        rc.register(WindowedKeyValueStoreResource.class);
-        rc.register(RestServerExceptionMapper.class);
-        rc.register(LoggingResource.class);
-        rc.register(provider);
+    // create JsonProvider to provide custom ObjectMapper
+    var mapper = new ObjectMapper();
+    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        // create Grizzly instance and add handler
-        HttpHandler handler = ContainerFactory.createContainer(
-                GrizzlyHttpContainer.class, rc);
-        var baseUri = UriBuilder.fromPath(ROOT_RESOURCE_PATH).scheme("http").host(hostInfo.host()).port(hostInfo.port()).build();
-        server = GrizzlyHttpServerFactory.createHttpServer(baseUri);
-        ServerConfiguration config = server.getServerConfiguration();
-        config.addHttpHandler(handler, "/");
+    var provider = new JacksonJsonProvider();
+    provider.setMapper(mapper);
+
+    // Create an instance of the MetricsResource
+    metricsResource = new MetricsResource();
+
+    // configure REST service
+    ResourceConfig rc = new ResourceConfig();
+    rc.register(KeyValueStoreResource.class);
+    rc.register(WindowedKeyValueStoreResource.class);
+    rc.register(RestServerExceptionMapper.class);
+    // Register the logger handler
+    rc.register(LoggingResource.class);
+    // Register the prometheus metrics endpoint
+    rc.register(this.metricsResource);
+    rc.register(provider);
+
+    // create Grizzly instance and add handler
+    HttpHandler handler = ContainerFactory.createContainer(
+        GrizzlyHttpContainer.class, rc);
+    var baseUri = UriBuilder.fromPath(ROOT_RESOURCE_PATH).scheme("http").host(hostInfo.host())
+        .port(hostInfo.port()).build();
+    server = GrizzlyHttpServerFactory.createHttpServer(baseUri);
+    ServerConfiguration config = server.getServerConfiguration();
+    config.addHttpHandler(handler, "/");
+  }
+
+  public String start(StreamsQuerier querier, KafkaStreams streams, File configDir, File schemaDir,
+      File storageDir) {
+    try {
+      metricsResource.registerKafkaStreams(streams);
+      metricsResource.registerConfigDir(configDir);
+      metricsResource.registerSchemaDir(schemaDir);
+      metricsResource.registerStorageDir(storageDir);
+      GlobalState.INSTANCE.set(querier, hostInfo);
+      server.start();
+      return Utils.getHostIPForDiscovery();
+    } catch (IOException e) {
+      return null;
     }
+  }
 
-    public String start(StreamsQuerier querier) {
-        try {
-            GlobalState.INSTANCE.set(querier, hostInfo);
-            server.start();
-            return Utils.getHostIPForDiscovery();
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public void close() {
-        server.shutdownNow();
-    }
+  @Override
+  public void close() {
+    server.shutdownNow();
+  }
 }

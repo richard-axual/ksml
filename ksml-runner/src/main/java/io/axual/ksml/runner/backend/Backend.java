@@ -21,6 +21,7 @@ package io.axual.ksml.runner.backend;
  */
 
 
+import java.io.File;
 import org.apache.kafka.streams.KafkaStreams;
 
 import io.axual.ksml.rest.server.StreamsQuerier;
@@ -37,6 +38,8 @@ public interface Backend extends AutoCloseable, Runnable {
     State getState();
 
     StreamsQuerier getQuerier();
+
+    KafkaStreams getStreams();
 
     default State convertStreamsState(KafkaStreams.State state) {
         return switch (state) {
