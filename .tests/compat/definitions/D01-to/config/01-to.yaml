@@ -1,0 +1,70 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Copy Operation Test - copies messages from input to output without modification
+
+streams:
+  input_stream:
+    topic: test-input-to
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  static_stream:
+    topic: test-output-to
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  extracted_stream_odd:
+    topic: test-output-extracted-odd
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  extracted_stream_even:
+    topic: test-output-extracted-even
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  to_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("TO PIPELINE - Processing message: key={}, value={}", key, value)
+    to: static_stream
+
+  extracted_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("TO PIPELINE - Processing message: key={}, value={}", key, value)
+    toTopicNameExtractor:
+      topicNameExtractor:
+        code: |
+          topicPostfix = "even"
+          if value is not None and value.get("count", 0) % 2 != 0:
+            topicPostfix = "odd"
+        expression: f"test-output-stream-extracted-{topicPostfix}"
+        resultType: (avro:SimpleKey,avro:SimpleValue)
+
+
+  inspect_static:
+    from: static_stream
+    forEach:
+      code: |
+        log.info("TO PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_extracted_odd:
+    from: extracted_stream_odd
+    forEach:
+      code: |
+        log.info("EXTRACTED PIPELINE ODD - Output message: key={}, value={}", key, value)
+
+  inspect_extracted_even:
+    from: extracted_stream_even
+    forEach:
+      code: |
+        log.info("EXTRACTED PIPELINE EVEN - Output message: key={}, value={}", key, value)

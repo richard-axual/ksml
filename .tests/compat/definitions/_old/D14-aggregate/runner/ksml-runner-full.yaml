@@ -1,0 +1,35 @@
+ksml:
+  configDirectory: /otherKsml/config
+  schemaDirectory: /otherKsml/schemas
+  storageDirectory: /tmp/test/storage
+  createStorageDirectory: true
+
+  applicationServer:
+    enabled: true
+    host: 0.0.0.0
+    port: 8088
+
+  prometheus:
+    enabled: true
+    host: 0.0.0.0
+    port: 9988
+
+  definitions:
+    # Format is <namespace>: <ksml_definition_filename>
+    producers: 00-generate-data.yaml
+    pipelines: 01-copy-and-inspect-data.yaml
+
+kafka:
+  application.id: "io.ksml.compat-testing-definition-D01"
+  bootstrap.servers: "broker:9093"
+  schema.registry.url: "http://registry:8081/apis/ccompat/v7"
+  security.protocol: "PLAINTEXT"
+  auto.offset.reset: "earliest"
+  group.instance.id: "testing-ksml"
+
+  tenant: "axual"
+  instance: "testing"
+  environment: "compat"
+  transactional.id.pattern: "{tenant}-{instance}-{environment}-{transactional.id}"
+  group.id.pattern: "{tenant}-{instance}-{environment}-{group.id}"
+  topic.pattern: "{tenant}-{instance}-{environment}-{topic}"

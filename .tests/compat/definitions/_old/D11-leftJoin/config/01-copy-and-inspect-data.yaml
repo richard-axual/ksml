@@ -1,0 +1,40 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# LeftJoin Operation Test - performs left join operation
+
+streams:
+  input_stream:
+    topic: test-input-leftJoin
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-leftJoin
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  leftJoin_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("LEFTJOIN PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate left join by adding left join data
+            newValue = value.copy() if value is not None else dict()
+            newValue["leftJoinedText"] = f"LeftJoined: {newValue.get('text', 'N/A')}"
+            newValue["leftJoinedFlag"] = True
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("LEFTJOIN PIPELINE - Output message: key={}, value={}", key, value)

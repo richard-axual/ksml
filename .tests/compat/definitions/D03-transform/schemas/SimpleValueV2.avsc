@@ -1,0 +1,24 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Simple Avro Value",
+  "name": "SimpleValueV2",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "Additional text",
+      "name": "text",
+      "type": "string"
+    },
+    {
+      "doc": "The iteration number",
+      "name": "count",
+      "type": "long"
+    },
+    {
+      "doc": "The double of the iteration number",
+      "name": "doubledCount",
+      "type": ["null","long"],
+      "default": null
+    }
+  ]
+}

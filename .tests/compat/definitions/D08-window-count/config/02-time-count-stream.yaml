@@ -1,0 +1,115 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Filter Operation Test - filters messages based on count field value
+
+streams:
+  input_stream:
+    topic: test-count-stream-input-time
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+
+  output_stream_hopping:
+    topic: test-count-stream-output-hopping
+    keyType: avro:WindowedSimpleKey
+    valueType: long
+
+  output_stream_sliding:
+    topic: test-count-stream-output-sliding
+    keyType: avro:WindowedSimpleKey
+    valueType: long
+
+  output_stream_tumbling:
+    topic: test-count-stream-output-tumbling
+    keyType: avro:WindowedSimpleKey
+    valueType: long
+
+pipelines:
+  grouping_pipeline:
+    from: input_stream
+    via:
+      - type: groupByKey
+    as: grouped_input_stream
+
+  hopping_count_pipeline:
+    from: grouped_input_stream
+    via:
+      - type: windowByTime
+        windowType: hopping
+        advanceBy: 5s
+        duration: 5s
+      - type: count
+        name: hopping_counter
+        store:
+          name: stream_hopping_count
+          type: window
+          persistent: false
+          timestamped: false
+          retention: 4m
+          keyType: avro:SimpleKey
+          valueType: long
+          caching: true
+          logging: true
+      - type: toStream
+    to: output_stream_hopping
+
+  sliding_count_pipeline:
+    from: grouped_input_stream
+    via:
+      - type: windowByTime
+        windowType: sliding
+        timeDifference: 6s
+        grace: 2s
+      - type: count
+        name: sliding_counter
+        store:
+          name: stream_sliding_count
+          type: window
+          persistent: false
+          timestamped: false
+          retention: 6m
+          keyType: avro:SimpleKey
+          valueType: long
+          caching: true
+          logging: true
+      - type: toStream
+    to: output_stream_sliding
+
+  tumbling_count_pipeline:
+    from: grouped_input_stream
+    via:
+      - type: windowByTime
+        windowType: tumbling
+        duration: 7s
+      - type: count
+        name: tumbling_counter
+        store:
+          name: stream_tumbling_count
+          type: window
+          persistent: false
+          timestamped: false
+          retention: 7m
+          keyType: avro:SimpleKey
+          valueType: long
+          caching: true
+          logging: true
+      - type: toStream
+    to: output_stream_tumbling
+
+  inspect_hopping:
+    from: output_stream_hopping
+    forEach:
+      code: |
+        log.info("HOPPING COUNT PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_sliding:
+    from: output_stream_sliding
+    forEach:
+      code: |
+        log.info("SLIDING COUNT PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_tumbling:
+    from: output_stream_tumbling
+    forEach:
+      code: |
+        log.info("TUMBLING COUNT PIPELINE - Output message: key={}, value={}", key, value)

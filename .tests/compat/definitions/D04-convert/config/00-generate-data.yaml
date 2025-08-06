@@ -1,0 +1,37 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Convert Operation Test - generates test data for convert pipeline
+
+streams:
+  input_target:
+    topic: test-input-convert
+    keyType: json
+    valueType: json
+
+producers:
+  convert_data_producer:
+    to: input_target
+    interval: 2s
+    generator:
+      globalCode: |
+        global convertCounter
+        convertCounter = 0
+      code: |
+        global convertCounter
+        convertCounter += 1
+
+        current = convertCounter
+
+        key = None
+        if current % 10 != 0:
+          key = dict()
+          key["count"] = current
+
+        value = None
+        if current % 10 != 1:
+          value = dict()
+          value["text"] = f"Test data to convert - {current}"
+          value["count"] = current
+
+      expression: (key,value)
+      resultType: (json,json)

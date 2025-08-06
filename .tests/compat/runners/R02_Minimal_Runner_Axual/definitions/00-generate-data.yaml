@@ -1,0 +1,63 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# This example shows how to generate data and have it sent to a target topic in a given format.
+
+streams:
+  avro_target:
+    topic: avro-topic
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+  string_target:
+    topic: string-topic
+    keyType: string
+    valueType: string
+
+producers:
+  avro_producer:
+    to: avro_target
+    interval: 2s
+    generator:
+      globalCode: |
+        global avroCounter
+        avroCounter = 0
+      code: |
+        global avroCounter
+        avroCounter += 1
+
+        current = avroCounter
+
+        key=None
+        if current % 10 != 0:
+          key = dict()
+          key["count"] = current
+
+        value = None
+        if current % 10 != 1:
+          value = dict()
+          value["text"] = "Avro Loop"
+          value["count"] = current
+
+      expression: (key,value)
+      resultType: (avro:SimpleKey,avro:SimpleValue)
+      
+  string_producer:
+    to: string_target
+    interval: 1000
+    generator:
+      globalCode: |
+        global stringCounter
+        stringCounter = 0
+      code: |
+        global stringCounter
+        stringCounter += 1
+        current = stringCounter
+        key = None
+        if current % 10 != 0:
+          key = str(current) 
+
+        value = None
+        if current % 10 != 1:
+          value = f"String loop - {current}"
+
+      expression: (key,value)
+      resultType: (string,string)

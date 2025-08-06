@@ -1,0 +1,14 @@
+ksml:
+  definitions:
+    # Format is <namespace>: <ksml_definition_filename>
+    producers: 00-generate-data.yaml
+    pipelines: 01-copy-and-inspect-data.yaml
+
+kafka:
+  application.id: "io.ksml.compat-testing-runner-R01"
+  bootstrap.servers: "broker:9093"
+  schema.registry.url: "http://registry:8081/apis/ccompat/v7"
+  security.protocol: "PLAINTEXT"
+  auto.offset.reset: "earliest"
+  group.instance.id: "testing-ksml"
+

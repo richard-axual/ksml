@@ -1,0 +1,57 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Filter Operation Test - filters messages based on count field value
+
+streams:
+  input_stream:
+    topic: test-input-filter
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream_odd:
+    topic: test-output-filter-odd
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  output_stream_even:
+    topic: test-output-filter-even
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+functions:
+  is_even:
+    type: predicate
+    code: |
+      count = 0;
+      if value is not None:
+        # get the count, or zero if the field does not exist
+        count = value.get("count" , 0)
+    expression: count % 2 == 0
+
+pipelines:
+  filter_pipeline:
+    from: input_stream
+    via:
+      - type: filter
+        if: is_even
+    to: output_stream_even
+
+  filter_not_pipeline:
+    from: input_stream
+    via:
+      - type: filterNot
+        if: is_even
+    to: output_stream_odd
+
+  inspect_even:
+    from: output_stream_even
+    forEach:
+      code: |
+        log.info("FILTER PIPELINE (EVEN) - Output message: key={}, value={}", key, value)
+
+  inspect_odd:
+    from: output_stream_odd
+    forEach:
+      code: |
+        log.info("FILTER NOT PIPELINE (ODD) - Output message: key={}, value={}", key, value)

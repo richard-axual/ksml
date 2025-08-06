@@ -1,0 +1,49 @@
+{
+  "type": "record",
+  "name": "WindowedSimpleKey",
+  "namespace": "io.axual.ksml.example",
+  "doc": "Windowed Simple Key",
+  "fields": [
+    {
+      "name": "start",
+      "type": "long",
+      "doc": "Start timestamp",
+      "default": 0
+    },
+    {
+      "name": "end",
+      "type": "long",
+      "doc": "End timestamp",
+      "default": 0
+    },
+    {
+      "name": "startTime",
+      "type": "string",
+      "doc": "Start time",
+      "default": "Time Zero"
+    },
+    {
+      "name": "endTime",
+      "type": "string",
+      "doc": "End time",
+      "default": "Time Zero"
+    },
+    {
+      "name": "key",
+      "doc": "Window key",
+      "type": {
+        "namespace": "io.axual.ksml.example",
+        "doc": "Simple Avro Key",
+        "name": "SimpleKey",
+        "type": "record",
+        "fields": [
+          {
+            "doc": "The target ID",
+            "name": "id",
+            "type": "long"
+          }
+        ]
+      }
+    }
+  ]
+}

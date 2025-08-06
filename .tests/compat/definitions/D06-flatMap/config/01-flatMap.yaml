@@ -1,0 +1,80 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# FlatMap Operation Test - flattens and transforms messages
+
+streams:
+  input_stream:
+    topic: test-input-flatMap
+    keyType: avro:SimpleFlatmapKey
+    valueType: avro:SimpleFlatmapValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-flatMap
+    keyType: avro:SimpleFlatmapKey
+    valueType: avro:SimpleFlatmapValue
+
+  output_stream_vs:
+    topic: test-output-flatMap-vs
+    keyType: avro:SimpleFlatmapKey
+    valueType: avro:SimpleFlatmapValue
+
+pipelines:
+  flatMap_pipeline:
+    from: input_stream
+    via:
+      - type: flatMap
+        mapper:
+          code: |
+            # Create multiple output records from single input
+            results = []
+            if value is not None and "count" in value:
+              mapSize = value["count"] % 4
+              for i in range(mapSize):  # Create multiple records from each input
+                newKey = None
+                if key is not None:
+                  newKey = key.copy()
+                  newKey["flatIndex"] = i
+                
+                newValue = value.copy()
+                newValue["flatText"] = f"FlatMap {i}: {value.get('text', 'N/A')}"
+                newValue["flatCount"] = value["count"] * 10 + i
+                
+                results.append((newKey, newValue))
+            
+          expression: results
+          resultType: "[(avro:SimpleFlatmapKey,avro:SimpleFlatmapValue)]"
+    to: output_stream
+
+  flatMapValues_pipeline:
+    from: input_stream
+    via:
+      - type: flatMapValues
+        mapper:
+          code: |
+            # Create multiple output records from single input
+            results = []
+            if value is not None and "count" in value:
+              mapSize = value["count"] % 4
+              for i in range(mapSize):  # Create multiple records from each input
+                newValue = value.copy()
+                newValue["flatText"] = f"FlatMapValues {i}: {value.get('text', 'N/A')}"
+                newValue["flatCount"] = value["count"] * 10 + i
+            
+                results.append(newValue)
+
+          expression: results
+          resultType: "[avro:SimpleFlatmapValue]"
+    to: output_stream_vs
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("FLATMAP PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_output_vs:
+    from: output_stream_vs
+    forEach:
+      code: |
+        log.info("FLATMAP VALUES PIPELINE - Output message: key={}, value={}", key, value)

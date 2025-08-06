@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Transform Operation Test - transforms messages by adding a doubled count field
+
+streams:
+  input_stream:
+    topic: test-input-transform
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream_k:
+    topic: test-output-select-k
+    keyType: avro:SimpleKeyV2
+    valueType: avro:SimpleValue
+
+pipelines:
+  select_key_pipeline:
+    from: input_stream
+    via:
+      - type: selectKey
+        mapper:
+          resultType: avro:SimpleKeyV2
+          code: |
+            # Create new key with all original fields plus doubled count
+            if key is None:
+              return None
+
+            newKey = key.copy()
+            if "count" in newKey:
+              newKey["doubledCount"] = newKey["count"] * 2
+            newKey["text"] = f"Transform Key: {newKey.get('doubledCount', 'N/A')}"
+
+            return newKey
+    to: output_stream_k
+
+  inspect_select_k:
+    from: output_stream_k
+    forEach:
+      code: |
+        log.info("SELECT KEY PIPELINE - Output message: key={}, value={}", key, value)

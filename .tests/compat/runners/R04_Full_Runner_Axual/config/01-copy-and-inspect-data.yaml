@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# This example shows how to read from a simple stream and copy every message to a target topic.
+
+streams:
+  avro_in:
+    topic: avro-topic
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+  avro_out:
+    topic: avro-topic-copy
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  string_in:
+    topic: string-topic
+    keyType: string
+    valueType: string
+  string_out:
+    topic: string-topic-copy
+    keyType: string
+    valueType: string
+
+pipelines:
+  copy_string:
+    from: string_in
+    to: string_out
+  copy_avro:
+    from: avro_in
+    to: avro_out
+
+  inspect_string_out:
+    from: string_out
+    forEach:
+      code: |
+        log.info( f" #########\nRECEIVED FROM STRING\n  key: {key}\n  value: {value}" )
+  inspect_avro_out:
+    from: avro_out
+    forEach:
+      code: |
+        log.info( f" #########\nRECEIVED FROM AVRO\n  key: {key}\n  value: {value}" )

@@ -1,0 +1,3 @@
+# docker compose
+include:
+  - ../test-compose.yml

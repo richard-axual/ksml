@@ -1,0 +1,47 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Filter Operation Test - filters messages based on reduce field value
+
+streams:
+  input_stream:
+    topic: test-reduce-stream-input
+    keyType: avro:SimpleKey
+    valueType: long
+    offsetResetPolicy: earliest
+
+  output_stream_reducer:
+    topic: test-reduce-stream-output-reducer
+    keyType: avro:SimpleKey
+    valueType: long
+
+pipelines:
+  reducing_pipeline:
+    from: input_stream
+    via:
+      - type: groupByKey
+      - type: reduce
+        reducer:
+          code: |
+            value1_count = value1 if value1 is not None else 0
+            value2_count = value2 if value2 is not None else 0
+            newValue = value1_count+value1
+
+          expression: newValue
+          resultType: long
+#        store:
+#          name: stream_reduce
+#          type: keyValue
+#          persistent: false
+#          timestamped: false
+#          keyType: avro:SimpleKey
+#          valueType: long
+#          caching: false
+#          logging: true
+      - type: toStream
+    to: output_stream_reducer
+
+  inspect_reducer:
+    from: output_stream_reducer
+    forEach:
+      code: |
+        log.info("REDUCE REDUCER STREAM PIPELINE - Output message: key={}, value={}", key, value)

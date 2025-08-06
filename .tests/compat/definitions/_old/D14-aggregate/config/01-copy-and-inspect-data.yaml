@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Aggregate Operation Test - aggregates messages
+
+streams:
+  input_stream:
+    topic: test-input-aggregate
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-aggregate
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  aggregate_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("AGGREGATE PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate aggregate by adding aggregated data
+            newValue = value.copy() if value is not None else dict()
+            newValue["aggregatedText"] = f"Aggregated: {newValue.get('text', 'N/A')}"
+            if "count" in newValue:
+              newValue["aggregatedCount"] = newValue["count"] + 1000  # Simple aggregation
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("AGGREGATE PIPELINE - Output message: key={}, value={}", key, value)

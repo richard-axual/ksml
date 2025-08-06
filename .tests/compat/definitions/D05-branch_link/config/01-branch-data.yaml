@@ -1,0 +1,88 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Filter Operation Test - filters messages based on count field value
+
+streams:
+  input_stream:
+    topic: test-input-branch
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream_odd:
+    topic: test-output-branch-odd
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  output_stream_even:
+    topic: test-output-branch-even
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  output_stream_default:
+    topic: test-output-branch-default
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+functions:
+  is_even:
+    type: predicate
+    code: |
+      if value is None:
+        return False
+
+      result = value.get("count" , 0) % 2 == 0
+    expression: result
+
+  is_odd:
+    type: predicate
+    code: |
+      if value is None:
+        return False
+
+      result = value.get("count" , 0) % 2 != 0
+    expression: result
+
+pipelines:
+  branch_and_link_pipeline:
+    from: input_stream
+    branch:
+      - name: branch_odd
+        if: is_odd
+        as: process_odd
+      - name: branch_even
+        if: is_even
+        as: process_even
+      - name: branch_default
+        as: process_default
+
+  odd_pipeline:
+    from: process_odd
+    to: output_stream_odd
+
+  even_pipeline:
+    from: process_even
+    to: output_stream_even
+
+  default_pipeline:
+    from: process_default
+    to: output_stream_default
+
+
+  inspect_even:
+    from: output_stream_even
+    forEach:
+      code: |
+        log.info("BRANCH EVEN PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_odd:
+    from: output_stream_odd
+    forEach:
+      code: |
+        log.info("BRANCH ODD PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_default:
+    from: output_stream_default
+    forEach:
+      code: |
+        log.info("BRANCH DEFAULT PIPELINE - Output message: key={}, value={}", key, value)

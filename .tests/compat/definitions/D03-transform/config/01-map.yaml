@@ -1,0 +1,138 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Transform Operation Test - transforms messages by adding a doubled count field
+
+streams:
+  input_stream:
+    topic: test-input-transform
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream_kv:
+    topic: test-output-map
+    keyType: avro:SimpleKeyV2
+    valueType: avro:SimpleValueV2
+
+  output_stream_k:
+    topic: test-output-map-k
+    keyType: avro:SimpleKeyV2
+    valueType: avro:SimpleValue
+
+  output_stream_v:
+    topic: test-output-map-v
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValueV2
+
+  output_stream_vs:
+    topic: test-output-map-vs
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValueV2
+
+pipelines:
+  map_pipeline:
+    from: input_stream
+    via:
+      - type: map
+        mapper:
+          resultType: (avro:SimpleKeyV2,avro:SimpleValueV2)
+          code: |
+            # Create new key with all original fields plus doubled count
+            newKey = None
+            
+            if key is not None:
+              newKey = key.copy()
+              if "count" in newKey:
+                newKey["doubledCount"] = newKey["count"] * 2
+              newKey["text"] = f"Mapped: {newKey.get('doubledCount', 'N/A')}"
+
+            newValue = None
+            if value is not None:
+              newValue = value.copy()
+              if "count" in newValue:
+                newValue["doubledCount"] = newValue["count"] * 2
+              newValue["text"] = f"Mapped: {newValue.get('text', 'N/A')}"
+
+          expression: (newKey,newValue)
+    to: output_stream_kv
+
+  map_key_pipeline:
+    from: input_stream
+    via:
+      - type: mapKey
+        mapper:
+          resultType: avro:SimpleKeyV2
+          code: |
+            # Create new key with all original fields plus doubled count
+            if key is None:
+              return None
+
+            newKey = key.copy()
+            if "count" in newKey:
+              newKey["doubledCount"] = newKey["count"] * 2
+            newKey["text"] = f"Mapped Key: {newKey.get('doubledCount', 'N/A')}"
+
+            return newKey
+    to: output_stream_k
+
+  map_value_pipeline:
+    from: input_stream
+    via:
+      - type: mapValue
+        mapper:
+          resultType: avro:SimpleValueV2
+          code: |
+            # Create new value with all original fields plus doubled count
+            if value is None:
+              return None
+            
+            newValue = value.copy()
+            if "count" in newValue:
+              newValue["doubledCount"] = newValue["count"] * 2
+            newValue["text"] = f"Mapped Value: {newValue.get('text', 'N/A')}"
+            
+            return newValue
+    to: output_stream_v
+
+  map_values_pipeline:
+    from: input_stream
+    via:
+      - type: mapValues
+        mapper:
+          resultType: avro:SimpleValueV2
+          code: |
+            # Create new value with all original fields plus doubled count
+            if value is None:
+              return None
+            
+            newValue = value.copy()
+            if "count" in newValue:
+              newValue["doubledCount"] = newValue["count"] * 2
+            newValue["text"] = f"Mapped Values: {newValue.get('text', 'N/A')}"
+            
+            return newValue
+    to: output_stream_vs
+
+  inspect_map:
+    from: output_stream_kv
+    forEach:
+      code: |
+        log.info("MAP PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_map_k:
+    from: output_stream_k
+    forEach:
+      code: |
+        log.info("MAP KEY PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_map_v:
+    from: output_stream_v
+    forEach:
+      code: |
+        log.info("MAP VALUE PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_map_vs:
+    from: output_stream_vs
+    forEach:
+      code: |
+        log.info("MAP VALUES PIPELINE - Output message: key={}, value={}", key, value)

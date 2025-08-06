@@ -1,0 +1,19 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Simple Avro Value",
+  "name": "SimpleValueToJoin",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "Additional description",
+      "name": "description",
+      "type": "string"
+    },
+    {
+      "doc": "The optional iteration number",
+      "name": "iteration",
+      "type": [ "null" ,"long"],
+      "default": null
+    }
+  ]
+}

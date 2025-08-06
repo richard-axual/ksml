@@ -1,0 +1,37 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# branch Operation Test - generates test data for branch pipeline
+
+streams:
+  input_target:
+    topic: test-input-branch
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+producers:
+  branch_data_producer:
+    to: input_target
+    interval: 2s
+    generator:
+      globalCode: |
+        global branchCounter
+        branchCounter = 0
+      code: |
+        global branchCounter
+        branchCounter += 1
+
+        current = branchCounter
+
+        key = None
+        if current % 10 != 0:
+          key = dict()
+          key["count"] = current
+
+        value = None
+        if current % 10 != 1:
+          value = dict()
+          value["text"] = f"branch test data - {current}"
+          value["count"] = current
+
+      expression: (key,value)
+      resultType: (avro:SimpleKey,avro:SimpleValue)

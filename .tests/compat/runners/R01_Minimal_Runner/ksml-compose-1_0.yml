@@ -1,0 +1,28 @@
+include:
+  - ../test-compose.yml
+services:
+  ksml_v1_0:
+    image: axual/ksml:1.0.6
+    pull_policy: missing
+    hostname: ksml-test
+    restart: no
+    ports:
+      - 8080:8080
+      - 9999:9999
+    # Using this non-standard directory to verify nothing is hardcoded to the image default /ksml
+    volumes:
+      - ./definitions:/notDefaultKsml
+    working_dir: /notDefaultKsml
+    command:
+      - /notDefaultKsml/ksml-runner-minimal.yaml
+    depends_on:
+      broker:
+        condition: service_healthy
+        restart: false
+      schema_registry:
+        condition: service_healthy
+        restart: false
+      prepare_cluster:
+        condition: service_completed_successfully
+        restart: false
+

@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# WindowedAggregate Operation Test - performs windowed aggregation
+
+streams:
+  input_stream:
+    topic: test-input-windowedAggregate
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-windowedAggregate
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  windowedAggregate_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("WINDOWED_AGGREGATE PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate windowed aggregate by adding windowed data
+            newValue = value.copy() if value is not None else dict()
+            newValue["windowedText"] = f"Windowed: {newValue.get('text', 'N/A')}"
+            if "count" in newValue:
+              newValue["windowedSum"] = newValue["count"] * 5  # Simple windowed aggregation
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("WINDOWED_AGGREGATE PIPELINE - Output message: key={}, value={}", key, value)

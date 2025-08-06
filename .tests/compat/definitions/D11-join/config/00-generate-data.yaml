@@ -1,0 +1,137 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Count Operation Test - generates test data for aggregate pipeline
+
+streams:
+  input_stream:
+    topic: test-join-stream-input
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+  input_stream_oj:
+    topic: test-join-stream-input-oj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+  table_j:
+    topic: test-join-table-j
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+  table_lj:
+    topic: test-join-table-lj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+
+functions:
+  globals:
+    type: generic
+    resultType: boolean
+    expression: False
+    globalCode: |
+      from itertools import cycle
+      k0 = "Key-0"
+      k1 = "Key-1"
+      k2 = "Key-2"
+      k3 = "Key-3"
+      k4 = "Key-4"
+      k5 = "Key-5"
+      keys = [k0,k1,k2,k3]
+      
+      tableJ = [ (k0, "JoinValue-0"), (k2, "JoinValue-2" ) ]
+      def hasNextTableJ():
+        return bool(tableJ)
+      def nextTableJ():
+        return tableJ.pop()
+      
+      tableLJ = [ (k1, "LeftJoinValue-1"), (k3, "LeftJoinValue-3" ) ]
+      def hasNextTableLJ():
+        return bool(tableLJ)
+      def nextTableLJ():
+        return tableLJ.pop()
+      
+      keysOJ = [k3,k4,k5]
+      streamOJ = cycle(keysOJ)
+      global counterOJ
+      counterOJ = 0
+      def nextStreamOJ():
+        global counterOJ
+        curVal = counterOJ
+        counterOJ += 1
+        return (next(streamOJ), f"OuterJoinValue-{curVal}", curVal)
+
+      stream = cycle(keys)
+      global counter
+      counter = 0
+      def nextStream():
+        global counter
+        curVal = counter
+        counter += 1
+        return (next(stream), f"StreamValue-{curVal}", curVal)
+
+
+
+
+producers:
+  produce_table_j:
+    to: table_j
+    interval: 100
+    until:
+      expression: not hasNextTableJ()
+    generator:
+      code: |
+        nextEntry = nextTableJ()
+        newKey = {
+          "id" : nextEntry[0]
+        }
+        newValue = {
+          "description": nextEntry[1]
+        }
+      expression: (newKey,newValue)
+      resultType: "(avro:SimpleStringKey,avro:SimpleValueToJoin)"
+
+  produce_table_lj:
+    to: table_lj
+    interval: 100
+    until:
+      expression: not hasNextTableLJ()
+    generator:
+      code: |
+        nextEntry = nextTableLJ()
+        newKey = {
+          "id" : nextEntry[0]
+        }
+        newValue = {
+          "description": nextEntry[1]
+        }
+      expression: (newKey,newValue)
+      resultType: "(avro:SimpleStringKey,avro:SimpleValueToJoin)"
+
+  produce_stream_oj:
+    to: input_stream_oj
+    interval: 1000
+    generator:
+      code: |
+        nextEntry = nextStreamOJ()
+        newKey = {
+          "id" : nextEntry[0]
+        }
+        newValue = {
+          "description": nextEntry[1],
+          "iteration": nextEntry[2]
+        }
+      expression: (newKey,newValue)
+      resultType: "(avro:SimpleStringKey,avro:SimpleValueToJoin)"
+
+  produce_stream:
+    to: input_stream
+    interval: 1000
+    generator:
+      code: |
+        nextEntry = nextStream()
+        newKey = {
+          "id" : nextEntry[0]
+        }
+        newValue = {
+          "description": nextEntry[1],
+          "iteration": nextEntry[2]
+        }
+      expression: (newKey,newValue)
+      resultType: "(avro:SimpleStringKey,avro:SimpleValueToJoin)"

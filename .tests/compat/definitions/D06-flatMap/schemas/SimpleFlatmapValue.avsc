@@ -1,0 +1,36 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Simple Avro Value",
+  "name": "SimpleFlatmapValue",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "Additional text",
+      "name": "text",
+      "type": "string"
+    },
+    {
+      "doc": "The iteration number",
+      "name": "count",
+      "type": "long"
+    },
+    {
+      "doc": "The flatmap number for this iteration",
+      "name": "flatCount",
+      "type": [
+        "null",
+        "long"
+      ],
+      "default": null
+    },
+    {
+      "doc": "The flatmap text for this iteration",
+      "name": "flatText",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    }
+  ]
+}

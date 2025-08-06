@@ -1,0 +1,47 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Simple Joined Value",
+  "name": "SimpleJoinedValue",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "The left value of the join",
+      "name": "left",
+      "type": [
+        "null",
+        {
+          "namespace": "io.axual.ksml.example",
+          "doc": "Simple Avro Value",
+          "name": "SimpleValueToJoin",
+          "type": "record",
+          "fields": [
+            {
+              "doc": "Additional text",
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "doc": "The optional iteration number",
+              "name": "count",
+              "type": [
+                "null",
+                "long"
+              ],
+              "default": null
+            }
+          ]
+        }
+      ],
+      "default": null
+    },
+    {
+      "doc": "The right value of the join",
+      "name": "right",
+      "type": [
+        "null",
+        "io.axual.ksml.example.SimpleValueToJoin"
+      ],
+      "default": null
+    }
+  ]
+}

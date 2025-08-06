@@ -1,0 +1,33 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Copy Operation Test - copies messages from input to output without modification
+
+streams:
+  input_stream:
+    topic: test-input-avro-complex
+    keyType: avro:SimpleKey
+    valueType: avro:AggregatedSimpleValues
+    offsetResetPolicy: earliest
+  
+  to_stream:
+    topic: test-output-avro-complex
+    keyType: avro:SimpleKey
+    valueType: avro:AggregatedSimpleValues
+
+pipelines:
+  to_pipeline:
+    from: input_stream
+    to: to_stream
+
+  inspect_input:
+    from: input_stream
+    forEach:
+      code: |
+        log.info("INPUT - message: key={}, value={}", key, value)
+
+  inspect_output:
+    from: to_stream
+    forEach:
+      code: |
+        log.info("OUTPUT - message: key={}, value={}", key, value)
+

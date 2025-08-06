@@ -1,0 +1,40 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# OuterJoin Operation Test - performs outer join operation
+
+streams:
+  input_stream:
+    topic: test-input-outerJoin
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-outerJoin
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  outerJoin_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("OUTERJOIN PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate outer join by adding outer join data
+            newValue = value.copy() if value is not None else dict()
+            newValue["outerJoinedText"] = f"OuterJoined: {newValue.get('text', 'N/A')}"
+            newValue["outerJoinedFlag"] = True
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("OUTERJOIN PIPELINE - Output message: key={}, value={}", key, value)

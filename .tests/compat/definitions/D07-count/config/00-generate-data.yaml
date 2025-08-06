@@ -1,0 +1,35 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Count Operation Test - generates test data for count pipeline
+
+streams:
+  input_target:
+    topic: test-count-stream-input
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+producers:
+  count_data_producer:
+    to: input_target
+    interval: 1000
+    generator:
+      globalCode: |
+        global countCounter
+        countCounter = 0
+      code: |
+        global countCounter
+        countCounter += 1
+
+        current = countCounter
+
+        key = dict()
+        key["id"] = current%5
+
+        value = None
+        if current % 10 != 1:
+          value = dict()
+          value["text"] = f"Test data to count - {current}"
+          value["count"] = current
+
+      expression: (key,value)
+      resultType: (avro:SimpleKey,avro:SimpleValue)

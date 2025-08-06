@@ -1,0 +1,13 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Simple Avro Key",
+  "name": "SimpleKey",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "The target ID",
+      "name": "id",
+      "type": "long"
+    }
+  ]
+}

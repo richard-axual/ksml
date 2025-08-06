@@ -1,0 +1,26 @@
+# docker compose
+include:
+  - ../test-compose.yml
+
+# Run all services to get Red Panda
+services:
+
+  # Create test data
+  prepare_cluster:
+    image: apache/kafka:4.0.0
+    hostname: kafka-setup
+    depends_on:
+      broker:
+        condition: service_healthy
+        restart: false
+    restart: on-failure
+    command: "bash -c 'echo Trying to create topics... && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic avro-topic --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic avro-topic-copy --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic string-topic --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic string-topic-copy --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic axual-testing-compat-avro-topic --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic axual-testing-compat-avro-topic-copy --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic axual-testing-compat-string-topic --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9093 --create --if-not-exists --topic axual-testing-compat-string-topic-copy --replication-factor 1 --partitions 3 --config cleanup.policy=delete && \
+                         echo Done'"

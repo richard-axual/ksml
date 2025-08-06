@@ -1,0 +1,108 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Transform Operation Test - transforms messages by adding a doubled count field
+
+streams:
+  input_stream:
+    topic: test-input-transform
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream_kv:
+    topic: test-output-transform
+    keyType: avro:SimpleKeyV2
+    valueType: avro:SimpleValueV2
+
+  output_stream_k:
+    topic: test-output-transform-k
+    keyType: avro:SimpleKeyV2
+    valueType: avro:SimpleValue
+
+  output_stream_v:
+    topic: test-output-transform-v
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValueV2
+
+pipelines:
+  transform_pipeline:
+    from: input_stream
+    via:
+      - type: transformKeyValue
+        mapper:
+          resultType: (avro:SimpleKeyV2,avro:SimpleValueV2)
+          code: |
+            # Create new key with all original fields plus doubled count
+            newKey = None
+            
+            if key is not None:
+              newKey = key.copy()
+              if "count" in newKey:
+                newKey["doubledCount"] = newKey["count"] * 2
+              newKey["text"] = f"Transform KeyValue: {newKey.get('doubledCount', 'N/A')}"
+
+            newValue = None
+            if value is not None:
+              newValue = value.copy()
+              if "count" in newValue:
+                newValue["doubledCount"] = newValue["count"] * 2
+              newValue["text"] = f"Transform KeyValue: {newValue.get('text', 'N/A')}"
+
+          expression: (newKey,newValue)
+    to: output_stream_kv
+
+  transform_key_pipeline:
+    from: input_stream
+    via:
+      - type: transformKey
+        mapper:
+          resultType: avro:SimpleKeyV2
+          code: |
+            # Create new key with all original fields plus doubled count
+            if key is None:
+              return None
+
+            newKey = key.copy()
+            if "count" in newKey:
+              newKey["doubledCount"] = newKey["count"] * 2
+            newKey["text"] = f"Transform Key: {newKey.get('doubledCount', 'N/A')}"
+
+            return newKey
+    to: output_stream_k
+
+  transform_value_pipeline:
+    from: input_stream
+    via:
+      - type: transformValue
+        mapper:
+          resultType: avro:SimpleValueV2
+          code: |
+            # Create new value with all original fields plus doubled count
+            if value is None:
+              return None
+            
+            newValue = value.copy()
+            if "count" in newValue:
+              newValue["doubledCount"] = newValue["count"] * 2
+            newValue["text"] = f"Transform Value: {newValue.get('text', 'N/A')}"
+            
+            return newValue
+    to: output_stream_v
+
+  inspect_transform:
+    from: output_stream_kv
+    forEach:
+      code: |
+        log.info("TRANSFORM KEY VALUE PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_transform_k:
+    from: output_stream_k
+    forEach:
+      code: |
+        log.info("TRANSFORM KEY PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_transform_v:
+    from: output_stream_v
+    forEach:
+      code: |
+        log.info("TRANSFORM VALUE PIPELINE - Output message: key={}, value={}", key, value)

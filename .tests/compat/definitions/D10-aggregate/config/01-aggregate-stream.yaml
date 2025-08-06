@@ -1,0 +1,69 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+streams:
+  input_stream:
+    topic: test-aggregate-stream-input
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+
+  output_stream_aggregated:
+    topic: test-aggregate-stream-output-aggregated
+    keyType: avro:SimpleKey
+    valueType: avro:AggregatedSimpleValues
+
+functions:
+  globals:
+    type: generic
+    globalCode: |
+      from datetime import datetime, timezone
+      def getNow():
+        utc_timestamp = datetime.now(timezone.utc).timestamp()
+        return str(utc_timestamp)
+    expression: False
+    resultType: boolean
+
+pipelines:
+  aggregating_pipeline:
+    from: input_stream
+    via:
+      - type: groupByKey
+      - type: aggregate
+        initializer:
+          code: |
+            newValue = dict()
+            newValue["createdAt"] = getNow()
+            newValue["aggregated"] = dict()
+            log.info(f"Initialized new aggregate: {newValue}")
+          expression: newValue
+          resultType: avro:AggregatedSimpleValues
+        aggregator:
+          code: |
+            nowStr = getNow()
+            aggregatedValue["aggregated"][nowStr] = value
+    
+            log.info(f"Updated aggregatedValue for now: {nowStr}  New Aggregate : {aggregatedValue}")
+          expression: aggregatedValue
+          resultType: avro:AggregatedSimpleValues
+        store:
+          name: kaboom
+          type: keyValue
+          keyType: avro:SimpleKey
+          valueType: avro:AggregatedSimpleValues
+          #        store:
+          #          name: stream_aggregate
+          #          type: keyValue
+          #          persistent: false
+          #          timestamped: false
+          #          keyType: avro:SimpleKey
+          #          valueType: avro:AggegatedSimpleValues
+          #          caching: false
+          #          logging: true
+      - type: toStream
+    to: output_stream_aggregated
+
+  inspect_aggregated:
+    from: output_stream_aggregated
+    forEach:
+      code: |
+        log.info("AGGREGATE STREAM PIPELINE - Output message: key={}, value={}", key, value)

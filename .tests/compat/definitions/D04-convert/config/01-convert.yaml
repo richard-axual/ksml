@@ -1,0 +1,65 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Convert Operation Test - converts data format using transformValue
+
+streams:
+  input_stream:
+    topic: test-input-convert
+    keyType: json
+    valueType: json
+    offsetResetPolicy: earliest
+  
+  output_convert:
+    topic: test-output-convert
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+  output_convert_key:
+    topic: test-output-convert-k
+    keyType: avro:SimpleKey
+    valueType: json
+
+  output_convert_value:
+    topic: test-output-convert-v
+    keyType: json
+    valueType: avro:SimpleValue
+
+pipelines:
+  convert_pipeline:
+    from: input_stream
+    via:
+      - type: convertKeyValue
+        into: (avro:SimpleKey,avro:SimpleValue)
+    to: output_convert
+
+  convert_key_pipeline:
+    from: input_stream
+    via:
+      - type: convertKey
+        into: avro:SimpleKey
+    to: output_convert_key
+
+  convert_value_pipeline:
+    from: input_stream
+    via:
+      - type: convertValue
+        into: avro:SimpleValue
+    to: output_convert_value
+
+  inspect_convert:
+    from: output_convert
+    forEach:
+      code: |
+        log.info("CONVERT PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_convert_key:
+    from: output_convert_key
+    forEach:
+      code: |
+        log.info("CONVERT KEY PIPELINE - Output message: key={}, value={}", key, value)
+
+  inspect_convert_value:
+    from: output_convert_value
+    forEach:
+      code: |
+        log.info("CONVERT VALUE PIPELINE - Output message: key={}, value={}", key, value)

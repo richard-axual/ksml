@@ -1,0 +1,114 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+streams:
+  input_stream:
+    topic: test-join-stream-input
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+    offsetResetPolicy: earliest
+
+  input_stream_oj:
+    topic: test-join-stream-input-oj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+    offsetResetPolicy: earliest
+
+  output_stream_oj:
+    topic: test-join-stream-output-oj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleJoinedValue
+    offsetResetPolicy: earliest
+
+  output_stream_lj:
+    topic: test-join-stream-output-lj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleJoinedValue
+    offsetResetPolicy: earliest
+
+  output_stream_j:
+    topic: test-join-stream-output-j
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleJoinedValue
+    offsetResetPolicy: earliest
+
+tables:
+  table_j:
+    topic: test-join-table-j
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+  table_lj:
+    topic: test-join-table-lj
+    keyType: avro:SimpleStringKey
+    valueType: avro:SimpleValueToJoin
+
+
+functions:
+  globals:
+    type: generic
+    globalCode: |
+      from datetime import datetime, timezone
+      def getNow():
+        utc_timestamp = datetime.now(timezone.utc).timestamp()
+        return str(utc_timestamp)
+    expression: False
+    resultType: boolean
+
+  simple_joiner:
+    type: valueJoiner
+    code: |
+      newValue = {
+        "left" : value1,
+        "right" : value2
+      }
+    expression: newValue
+    resultType: avro:SimpleJoinedValue
+
+
+pipelines:
+  join_pipeline:
+    from: input_stream
+    via:
+      - type: join
+        table: table_j
+        valueJoiner: simple_joiner
+    to: output_stream_j
+
+  join_inspect:
+    from: output_stream_j
+    forEach:
+      code: |
+        log.info("JOIN PIPELINE - Output message: key={}, value={}", key, value)
+
+  left_join_pipeline:
+    from: input_stream
+    via:
+    - type: leftJoin
+      table: table_lj
+      valueJoiner: simple_joiner
+    to: output_stream_lj
+
+  left_join_inspect:
+    from: output_stream_lj
+    forEach:
+      code: |
+       log.info("LEFT JOIN PIPELINE - Output message: key={}, value={}", key, value)
+#
+#  outer_join_pipeline:
+#    from: input_stream
+#    via:
+#    - type: outerJoin
+#      stream: input_stream_oj
+#      valueJoiner: simple_joiner
+#      timeDifference: 10s
+##      store:
+##        name: hello
+##        type: keyValue
+##        keyType: avro:SimpleStringKey
+##        valueType: avro:SimpleValueToJoin
+#    to: output_stream_oj
+#
+#  outer_join_inspect:
+#    from: output_stream_oj
+#    forEach:
+#      code: |
+#       log.info("OUTER JOIN PIPELINE - Output message: key={}, value={}", key, value)

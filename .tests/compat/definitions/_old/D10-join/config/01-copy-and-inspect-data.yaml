@@ -1,0 +1,40 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Join Operation Test - joins two streams
+
+streams:
+  input_stream:
+    topic: test-input-join
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-join
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  join_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("JOIN PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate join by adding joined data
+            newValue = value.copy() if value is not None else dict()
+            newValue["joinedText"] = f"Joined: {newValue.get('text', 'N/A')}"
+            newValue["joinedFlag"] = True
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("JOIN PIPELINE - Output message: key={}, value={}", key, value)

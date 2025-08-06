@@ -1,0 +1,44 @@
+{
+  "namespace": "io.axual.ksml.example",
+  "doc": "Aggregation of Simple Avro Value",
+  "name": "AggregatedSimpleValues",
+  "type": "record",
+  "fields": [
+    {
+      "doc": "Created at",
+      "name": "createdAt",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "doc": "All received values for the key",
+      "name": "aggregated",
+      "type": {
+        "type": "map",
+        "values": {
+          "namespace": "io.axual.ksml.example",
+          "doc": "Simple Avro Value",
+          "name": "SimpleValue",
+          "type": "record",
+          "fields": [
+            {
+              "doc": "Additional text",
+              "name": "text",
+              "type": "string"
+            },
+            {
+              "doc": "The iteration number",
+              "name": "count",
+              "type": "long"
+            }
+          ]
+        },
+        "default": {}
+      }
+    }
+  ]
+}
+

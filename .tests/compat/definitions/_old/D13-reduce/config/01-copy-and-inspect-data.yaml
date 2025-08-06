@@ -1,0 +1,41 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Reduce Operation Test - reduces messages by key
+
+streams:
+  input_stream:
+    topic: test-input-reduce
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  output_stream:
+    topic: test-output-reduce
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  reduce_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("REDUCE PIPELINE - Processing message: key={}, value={}", key, value)
+      - type: transformValue
+        mapper:
+          code: |
+            # Simulate reduce by adding reduced data
+            newValue = value.copy() if value is not None else dict()
+            newValue["reducedText"] = f"Reduced: {newValue.get('text', 'N/A')}"
+            if "count" in newValue:
+              newValue["reducedSum"] = newValue["count"] * 2  # Simple reduction
+            
+            return newValue
+    to: output_stream
+
+  inspect_output:
+    from: output_stream
+    forEach:
+      code: |
+        log.info("REDUCE PIPELINE - Output message: key={}, value={}", key, value)

@@ -1,0 +1,49 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Branch Operation Test - splits stream into multiple branches
+
+streams:
+  input_stream:
+    topic: test-input-branch
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+  
+  even_stream:
+    topic: test-output-branch-even
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    
+  odd_stream:
+    topic: test-output-branch-odd
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+
+pipelines:
+  branch_pipeline:
+    from: input_stream
+    via:
+      - type: peek
+        forEach:
+          code: |
+            log.info("BRANCH PIPELINE - Input message: key={}, value={}", key, value)
+      - type: branch
+        branches:
+          - if:
+              expression: value is not None and value.get("count", 0) % 2 == 0
+            to: even_stream
+          - if:
+              expression: value is not None and value.get("count", 0) % 2 == 1
+            to: odd_stream
+
+  inspect_even:
+    from: even_stream
+    forEach:
+      code: |
+        log.info("BRANCH PIPELINE - Even output: key={}, value={}", key, value)
+        
+  inspect_odd:
+    from: odd_stream
+    forEach:
+      code: |
+        log.info("BRANCH PIPELINE - Odd output: key={}, value={}", key, value)

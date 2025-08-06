@@ -1,0 +1,60 @@
+# $schema: https://raw.githubusercontent.com/Axual/ksml/refs/tags/1.0.8/docs/ksml-language-spec.json
+
+# Filter Operation Test - filters messages based on count field value
+
+streams:
+  input_stream:
+    topic: test-count-stream-input-session
+    keyType: avro:SimpleKey
+    valueType: avro:SimpleValue
+    offsetResetPolicy: earliest
+
+  output_stream_session:
+    topic: test-count-stream-output-session
+    keyType: avro:WindowedSimpleKey
+    valueType: long
+
+pipelines:
+  grouping_pipeline:
+    from: input_stream
+    via:
+      - type: groupByKey
+    as: grouped_input_stream
+
+  session_count_pipeline:
+    from: grouped_input_stream
+    via:
+      - type: windowBySession
+        inactivityGap: 15s
+        grace: 2s
+        store:
+          name: stream_session_windowed
+          type: session
+          persistent: false
+          timestamped: false
+          retention: 5m
+          keyType: avro:SimpleKey
+          valueType: avro:SimpleValue
+          caching: false
+          logging: true
+      - type: count
+        name: session_counter
+        store:
+          name: stream_session_count
+          type: session
+          persistent: false
+          timestamped: false
+          retention: 5m
+          keyType: avro:SimpleKey
+          valueType: long
+          caching: true
+          logging: true
+      - type: toStream
+    to: output_stream_session
+
+
+  inspect_session:
+    from: output_stream_session
+    forEach:
+      code: |
+        log.info("SESSION COUNT PIPELINE - Output message: key={}, value={}", key, value)
