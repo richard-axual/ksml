@@ -24,9 +24,10 @@ import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 
 import lombok.Builder;
 import lombok.Singular;
@@ -46,7 +47,7 @@ public class StructSchema extends NamedSchema {
      * the absence of a schema be reflected through null fields. Only 1 instance without a name is allowed, so code
      * that checks if the StructSchema represents "schemaless" can simply perform an equality ('==') check.
      */
-    public static final StructSchema SCHEMALESS = new StructSchema(null, null, null, null, null, null);
+    public static final StructSchema SCHEMALESS = new StructSchema(null, null, null, null, null, null, null, null);
 
     /**
      * This instance of the DataField can be used to determine if any value is allowed
@@ -85,6 +86,15 @@ public class StructSchema extends NamedSchema {
      */
     private final DataField additionalField;
 
+    /**
+     * List of tags that should not be used for possible compatibility issues.
+     */
+    private final Set<ReservedTagRange> reservedTags = new HashSet<>();
+
+    /**
+     * List of field names that should not be used for possible compatibility issues.
+     */
+    private final Set<String> reservedFieldNames = new HashSet<>();
 
     /**
      * Copy constructor for creating a new {@code StructSchema} based on an existing one.
@@ -96,7 +106,7 @@ public class StructSchema extends NamedSchema {
      * @throws IllegalArgumentException if {@code other} is null.
      */
     public StructSchema(StructSchema other) {
-        this(other.namespace(), other.name(), other.doc(), other.fields, null, null);
+        this(other.namespace(), other.name(), other.doc(), other.fields, other.allowAdditionalFields, other.additionalField, other.reservedTags, other.reservedFieldNames);
     }
 
     /**
@@ -109,7 +119,7 @@ public class StructSchema extends NamedSchema {
      * @throws IllegalArgumentException if {@code name} is null or empty.
      */
     public StructSchema(String namespace, String name, String doc, @Singular List<DataField> fields) {
-        this(namespace, name, doc, fields, null, null);
+        this(namespace, name, doc, fields, null, null, null, null);
     }
 
     /**
@@ -119,18 +129,26 @@ public class StructSchema extends NamedSchema {
      * @param name                  The name of the schema. Must not be {@code null} or empty.
      * @param doc                   Optional documentation or description of the schema.
      * @param fields                The list of fields that make up the schema. May be empty but not null.
-     * @param allowAdditionalFields set to true or null to allow additional fields to be used in this struct
-     * @param additionalField       Use a {@link DataField} to limit the value of any additional fields to a specific schema
+     * @param allowAdditionalFields set to true or null to allow additional fields to be used in this struct.
+     * @param additionalField       Use a {@link DataField} to limit the value of any additional fields to a specific schema.
+     * @param reservedTags          The list of tag ranges that should not be used because of possible compatibility issues.
+     * @param reservedFieldNames    The list of reserved field names that should not be used because of possible compatibility issues.
      * @throws IllegalArgumentException if {@code name} is null or empty.
      */
     @Builder(builderMethodName = "builder")
-    protected StructSchema(String namespace, String name, String doc, @Singular List<DataField> fields, Boolean allowAdditionalFields, DataField additionalField) {
+    protected StructSchema(String namespace, String name, String doc, @Singular List<DataField> fields, Boolean allowAdditionalFields, DataField additionalField, @Singular Set<ReservedTagRange> reservedTags, @Singular Set<String> reservedFieldNames) {
         super(DataSchemaConstants.STRUCT_TYPE, namespace, name, doc);
         if (fields != null) {
             this.fields.addAll(fields);
             for (var field : fields) {
                 fieldsByName.put(field.name(), field);
             }
+        }
+        if (reservedTags != null) {
+            this.reservedTags.addAll(reservedTags);
+        }
+        if (reservedFieldNames != null) {
+            this.reservedFieldNames.addAll(reservedFieldNames);
         }
         this.allowAdditionalFields = allowAdditionalFields == null || allowAdditionalFields;
         this.additionalField = additionalField == null ? ANY_FIELD : additionalField;
@@ -221,42 +239,23 @@ public class StructSchema extends NamedSchema {
         return true;
     }
 
-    /**
-     * Compares this object with the specified object for equality.
-     * <p>
-     * This method checks whether the provided object is of the same type
-     * and whether all significant fields of this object are equal to the respective
-     * fields of the provided object. It performs a deep comparison of fields to
-     * determine structural equivalence.
-     * </p>
-     *
-     * @param other The object to compare with this instance.
-     * @return {@code true} if the specified object is equal to this one; {@code false} otherwise.
-     * @see Object#equals(Object)
-     */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        if (!super.equals(other)) return false;
-        StructSchema that = (StructSchema) other;
-        if (!this.isAssignableFrom(that)) return false;
-        return that.isAssignableFrom(this);
+    public boolean equals(final Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        final StructSchema that = (StructSchema) o;
+        return allowAdditionalFields == that.allowAdditionalFields && fieldsByName.equals(that.fieldsByName) && additionalField.equals(that.additionalField) && reservedTags.equals(that.reservedTags) && reservedFieldNames.equals(that.reservedFieldNames);
     }
 
-    /**
-     * Computes a hash code for this object based on its significant fields.
-     * <p>
-     * The hash code is computed in such a way that it is consistent with the
-     * {@link #equals(Object)} method. That is, if two objects are equal according
-     * to the {@code equals} method, they must have the same hash code.
-     * </p>
-     *
-     * @return The hash code value for this object.
-     * @see Object#hashCode()
-     */
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), fields.hashCode());
+        int result = super.hashCode();
+        result = 31 * result + fields.hashCode();
+        result = 31 * result + Boolean.hashCode(allowAdditionalFields);
+        result = 31 * result + additionalField.hashCode();
+        result = 31 * result + reservedTags.hashCode();
+        result = 31 * result + reservedFieldNames.hashCode();
+        return result;
     }
 }

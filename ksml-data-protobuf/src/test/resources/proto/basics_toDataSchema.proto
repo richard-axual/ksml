@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package ksml.test.common;
+
+message OptionalScalars {
+  optional double optDouble = 1;
+  optional float optFloat = 2;
+  optional int32 optInt32 = 3;
+  optional int64 optInt64 = 4;
+  optional uint32 optUInt32 = 5;
+  optional uint64 optUInt64 = 6;
+  optional sint32 optSInt32 = 7;
+  optional sint64 optSInt64 = 8;
+  optional fixed32 optFixed32 = 9;
+  optional fixed64 optFixed64 = 10;
+  optional sfixed32 optSFixed32 = 11;
+  optional sfixed64 optSFixed64 = 12;
+  optional bool optBool = 13;
+  optional string optString = 14;
+  optional bytes optBytes = 15;
+  optional Colors optColor = 16;
+  optional SimpleMessage optSimple = 17;
+}
+
+message ImplicitScalars {
+  double impDouble = 1;
+  float impFloat = 2;
+  int32 impInt32 = 3;
+  int64 impInt64 = 4;
+  uint32 impUInt32 = 5;
+  uint64 impUInt64 = 6;
+  sint32 impSInt32 = 7;
+  sint64 impSInt64 = 8;
+  fixed32 impFixed32 = 9;
+  fixed64 impFixed64 = 10;
+  sfixed32 impSFixed32 = 11;
+  sfixed64 impSFixed64 = 12;
+  bool impBool = 13;
+  string impString = 14;
+  bytes impBytes = 15;
+  Colors impColor = 16;
+  SimpleMessage impSimple = 17;
+}
+
+message RepeatedScalars {
+  repeated double repDouble = 1;
+  repeated float repFloat = 2;
+  repeated int32 repInt32 = 3;
+  repeated int64 repInt64 = 4;
+  repeated uint32 repUInt32 = 5;
+  repeated uint64 repUInt64 = 6;
+  repeated sint32 repSInt32 = 7;
+  repeated sint64 repSInt64 = 8;
+  repeated fixed32 repFixed32 = 9;
+  repeated fixed64 repFixed64 = 10;
+  repeated sfixed32 repSFixed32 = 11;
+  repeated sfixed64 repSFixed64 = 12;
+  repeated bool repBool = 13;
+  repeated string repString = 14;
+  repeated bytes repBytes = 15;
+  repeated Colors repColors = 16;
+  repeated SimpleMessage repSimple = 17;
+}
+
+enum Colors{
+  COLORS_TYPE_NAME_UNKNOWN = 0;
+  RED = 1;
+  GREEN = 2;
+  BLUE = 3;
+}
+
+message SimpleMessage{
+  optional string id = 1;
+}
+
+message ReservedMessage{
+  optional string id = 1;
+  reserved 11, 12;
+  reserved 2, 3;
+  reserved "reserved1", "reserved2";
+  optional int32 count = 4;
+  reserved 5 to 10;
+  reserved "reserved4", "reserved3";
+}
+
+message WrapOneOf{
+  string id = 1;
+  // Reserve for additional field tyoes
+  reserved 2 to 100;
+  oneof NestedWrapType{
+    string strValue = 101;
+    int32 intValue = 102;
+    ImplicitScalars impScalars = 103;
+    OptionalScalars optScalars = 104;
+    RepeatedScalars repScalars = 105;
+  }
+  // Reserve for additional field tyoes
+  reserved 106 to 200;
+}
+
+message NestedDefinitions{
+  message NestedMessage{
+    string id = 1;
+    repeated NestedColors colors = 2;
+    optional SimpleMessage simple = 3;
+    reserved 4 to 10;
+    reserved "reserved1", "reserved2";
+    optional NestedWrapOneOf union = 11;
+  }
+
+  enum NestedColors{
+    NESTED_COLORS_TYPE_NAME_UNKNOWN = 0;
+    CYAN = 1;
+    MAGENTA = 2;
+    YELLOW = 3;
+  }
+
+  // Use a nested message to wrap the oneof statement, allowing use in maps
+  message NestedWrapOneOf{
+    oneof NestedWrapType{
+      string strValue = 1;
+      int32 intValue = 2;
+      ImplicitScalars impScalars = 3;
+      OptionalScalars optScalars = 4;
+      RepeatedScalars repScalars = 5;
+    }
+    // Reserve for additional field tyoes
+    reserved 6 to 100;
+  }
+}
+
+message MapWithOneOfValue{
+  string key = 1;
+  optional NestedDefinitions.NestedWrapOneOf value = 2;
+}
+
+message ComplexMessages{
+  repeated MapWithOneOfValue pseudoMap = 1;
+  map<string, NestedDefinitions.NestedWrapOneOf> nativeMap = 2;
+  map<string, NestedDefinitions.NestedColors> colorMap = 3;
+}

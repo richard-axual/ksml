@@ -40,4 +40,10 @@ public record Symbol(String name, String doc, int tag) {
     public static Symbol of(String symbol) {
         return new Symbol(symbol);
     }
+    public static Symbol of(String symbol, int tag) {
+        return new Symbol(symbol,null,tag);
+    }
+    public static Symbol of(String symbol, String doc, int tag) {
+        return new Symbol(symbol,doc,tag);
+    }
 }

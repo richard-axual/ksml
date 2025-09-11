@@ -109,4 +109,25 @@ class StructSchemaTest {
         ));
         assertThat(a).isNotEqualTo(c);
     }
+
+    @Test
+    @DisplayName("Copy constructor copies all fields")
+    void copyConstructor() {
+        var original = StructSchema.builder()
+                .namespace("ns")
+                .name("Person").field(requiredInt("id"))
+                .field(optionalStringWithDefault("name"))
+                .allowAdditionalFields(true)
+                .additionalField(new DataField(DataSchema.STRING_SCHEMA))
+                .reservedTag(ReservedTagRange.of(1,10))
+                .reservedTag(ReservedTagRange.of(15))
+                .reservedTag(ReservedTagRange.of(110))
+                .reservedFieldName("reserved1")
+                .reservedFieldName("reserved2")
+                .build();
+        assertThat(new StructSchema(original))
+                .usingRecursiveComparison()
+                .isNotSameAs(original)
+                .isEqualTo(original);
+    }
 }

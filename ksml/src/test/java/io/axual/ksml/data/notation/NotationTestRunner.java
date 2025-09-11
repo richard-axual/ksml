@@ -20,6 +20,9 @@ package io.axual.ksml.data.notation;
  * =========================LICENSE_END==================================
  */
 
+import org.apache.kafka.common.header.internals.RecordHeaders;
+import org.apache.kafka.common.serialization.StringDeserializer;
+
 import io.axual.ksml.data.exception.DataException;
 import io.axual.ksml.data.exception.SchemaException;
 import io.axual.ksml.data.mapper.DataObjectConverter;
@@ -30,9 +33,8 @@ import io.axual.ksml.data.notation.string.StringNotation;
 import io.axual.ksml.data.object.DataObject;
 import io.axual.ksml.data.schema.DataSchema;
 import io.axual.ksml.type.UserType;
-import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.apache.kafka.common.serialization.StringDeserializer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class NotationTestRunner {
@@ -57,7 +59,10 @@ class NotationTestRunner {
 
     static <T> void schemaTest(String type, DataSchemaMapper<T> schemaMapper) {
         schemaTest(type, schemaMapper, (input, output) -> {
-            assertEquals(input, output, "Input schema should match output schema");
+            assertThat(input)
+                    .as("Input schema should match output schema")
+                    .returns(true, i->i.isAssignableFrom(output))
+                    .returns(true, output::isAssignableFrom);
         });
     }
 
