@@ -212,6 +212,14 @@ public class StructSchema extends NamedSchema {
         return additionalField;
     }
 
+    public Set<ReservedTagRange> reservedTags() {
+        return reservedTags;
+    }
+
+    public Set<String> reservedFieldNames() {
+        return reservedFieldNames;
+    }
+
     /**
      * Determines if this schema can be assigned from another schema.
      * <p>

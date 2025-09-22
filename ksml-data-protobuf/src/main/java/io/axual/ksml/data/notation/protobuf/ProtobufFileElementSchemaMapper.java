@@ -29,6 +29,7 @@ import com.squareup.wire.schema.internal.parser.MessageElement;
 import com.squareup.wire.schema.internal.parser.OneOfElement;
 import com.squareup.wire.schema.internal.parser.OptionElement;
 import com.squareup.wire.schema.internal.parser.ProtoFileElement;
+import com.squareup.wire.schema.internal.parser.ReservedElement;
 import com.squareup.wire.schema.internal.parser.TypeElement;
 
 import java.util.ArrayList;
@@ -62,7 +63,6 @@ import static io.axual.ksml.data.notation.protobuf.ProtobufConstants.NO_DOCUMENT
 
 public class ProtobufFileElementSchemaMapper implements DataSchemaMapper<ProtoFileElement> {
     private static final int PROTOBUF_ENUM_DEFAULT_VALUE_INDEX = 0;
-    private static final String PROTOBUF_DOC_DEFAULT = "";
 
     @Override
     public StructSchema toDataSchema(String namespace, String name, ProtoFileElement fileElement) {
@@ -284,13 +284,25 @@ public class ProtobufFileElementSchemaMapper implements DataSchemaMapper<ProtoFi
             if (type != null) fields.add(convertDataFieldToFieldElement(field, type));
         }
 
+        final var reservedFields = new ArrayList<ReservedElement>();
+        for (final var reservedField : schema.reservedFieldNames()) {
+            reservedFields.add(new ReservedElement(DEFAULT_LOCATION, NO_DOCUMENTATION, List.of(reservedField)));
+        }
+        for (final var reservedTag : schema.reservedTags()) {
+            if (reservedTag.isRange()) {
+                reservedFields.add(new ReservedElement(DEFAULT_LOCATION, NO_DOCUMENTATION, List.of(new IntRange(reservedTag.beginInclusive(), reservedTag.endInclusive()))));
+            } else {
+                reservedFields.add(new ReservedElement(DEFAULT_LOCATION, NO_DOCUMENTATION, List.of(reservedTag.beginInclusive())));
+            }
+        }
+
         return new MessageElement(
                 DEFAULT_LOCATION,
                 schema.name(),
                 schema.hasDoc() ? schema.doc() : NO_DOCUMENTATION,
                 nestedTypes,
                 Collections.emptyList(),
-                Collections.emptyList(),
+                reservedFields,
                 fields,
                 oneOfs,
                 Collections.emptyList(),
@@ -332,7 +344,7 @@ public class ProtobufFileElementSchemaMapper implements DataSchemaMapper<ProtoFi
                 memberTypes.add(memberType);
             }
 
-            final var oneOf = new OneOfElement(field.name(), field.doc() != null ? field.doc() : PROTOBUF_DOC_DEFAULT, memberTypes, Collections.emptyList(), Collections.emptyList(), DEFAULT_LOCATION);
+            final var oneOf = new OneOfElement(field.name(), field.doc() != null ? field.doc() : NO_DOCUMENTATION, memberTypes, Collections.emptyList(), Collections.emptyList(), DEFAULT_LOCATION);
             parentOneOfs.add(oneOf);
         }
 
@@ -386,7 +398,7 @@ public class ProtobufFileElementSchemaMapper implements DataSchemaMapper<ProtoFi
     }
 
     private static StructSchema.StructSchemaBuilder structSchemaBuilder() {
-        return StructSchema.builder().allowAdditionalFields(false).doc(PROTOBUF_DOC_DEFAULT);
+        return StructSchema.builder().allowAdditionalFields(false).doc(NO_DOCUMENTATION);
     }
 
     /**

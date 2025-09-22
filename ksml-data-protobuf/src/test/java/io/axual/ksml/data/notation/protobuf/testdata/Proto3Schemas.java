@@ -139,11 +139,27 @@ public class Proto3Schemas implements TestSchemaData {
             ),
             Symbol.of("NESTED_COLORS_TYPE_NAME_UNKNOWN", PROTO_DOC_DEFAULT, 0));
 
+    protected static final StructSchema WRAP_ONEOF_DATASCHEMA = StructSchema.builder()
+            .name("WrapOneOfMessage")
+            .namespace(NAMESPACE)
+            .doc(PROTO_DOC_DEFAULT)
+            .allowAdditionalFields(false)
+            .field(new DataField("id", DataSchema.STRING_SCHEMA, PROTO_DOC_DEFAULT, 1, false))
+            .reservedTag(ReservedTagRange.of(2, 100))
+            .field(new DataField("strValue", DataSchema.STRING_SCHEMA, PROTO_DOC_DEFAULT, 101, false))
+            .field(new DataField("intValue", DataSchema.INTEGER_SCHEMA, PROTO_DOC_DEFAULT, 102, false))
+            .field(new DataField("impScalars", IMPLICIT_SCALARS_DATASCHEMA, PROTO_DOC_DEFAULT, 103, false))
+            .field(new DataField("optScalars", OPTIONAL_SCALARS_DATASCHEMA, PROTO_DOC_DEFAULT, 104, false))
+            .field(new DataField("repScalars", REPEATED_SCALARS_DATASCHEMA, PROTO_DOC_DEFAULT, 105, false))
+            .reservedTag(ReservedTagRange.of(106, 200))
+            .build();
+
     public static final TestSchemaData SIMPLE_SCHEMA = new SimpleMessage();
     public static final TestSchemaData REPEAT_SCALARS_SCHEMA = new RepeatedScalars();
     public static final TestSchemaData OPTIONAL_SCALARS_SCHEMA = new OptionalScalars();
     public static final TestSchemaData IMPLICIT_SCALARS_SCHEMA = new ImplicitScalars();
     public static final TestSchemaData RESERVED_MESSAGE_SCHEMA = new ReservedMessage();
+    public static final TestSchemaData WRAP_ONEOF_MESSAGE_SCHEMA = new WrapOneOfMessage();
 
     private final String name;
     private final DataSchema dataSchema;
@@ -286,6 +302,12 @@ public class Proto3Schemas implements TestSchemaData {
                     .reservedTag(ReservedTagRange.of(11))
                     .reservedTag(ReservedTagRange.of(12))
                     .build());
+        }
+    }
+
+    private static class WrapOneOfMessage extends Proto3Schemas {
+        private WrapOneOfMessage() {
+            super("WrapOneOfMessage", WRAP_ONEOF_DATASCHEMA, "ImplicitScalars", "OptionalScalars", "RepeatedScalars");
         }
     }
 

@@ -36,6 +36,10 @@ public record ReservedTagRange(int beginInclusive, int endInclusive) {
         }
     }
 
+    public boolean isRange() {
+        return beginInclusive < endInclusive;
+    }
+
     /**
      *
      * Create a record containing a range of reserved tags
