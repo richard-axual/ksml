@@ -84,6 +84,7 @@ class ProtobufFileElementSchemaMapperTest {
                 argumentSet("Object with Implicit Scalars", Proto3Schemas.IMPLICIT_SCALARS_SCHEMA),
                 argumentSet("Object with Repeated Scalars", Proto3Schemas.REPEAT_SCALARS_SCHEMA),
                 argumentSet("Reserved fields", Proto3Schemas.RESERVED_MESSAGE_SCHEMA)
+//                argumentSet("OneOf", Proto3Schemas.WRAP_ONEOF_MESSAGE_SCHEMA)
 //                argumentSet("Nested Object", Proto3Schemas.NESTED_MESSAGE_SCHEMA) // Nested object naming is issue
         );
     }

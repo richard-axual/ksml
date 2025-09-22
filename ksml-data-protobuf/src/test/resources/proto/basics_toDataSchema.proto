@@ -83,7 +83,7 @@ message ReservedMessage{
   reserved "reserved4", "reserved3";
 }
 
-message WrapOneOf{
+message WrapOneOfMessage{
   string id = 1;
   // Reserve for additional field tyoes
   reserved 2 to 100;
